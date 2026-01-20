@@ -1,0 +1,76 @@
+{
+  "name": "@portos/ai-toolkit",
+  "version": "0.1.0",
+  "description": "Shared AI provider, model, and prompt template patterns for PortOS-style applications",
+  "author": "Adam Eivy <adam@eivy.com> (https://atomantic.com)",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./server": "./src/server/index.js",
+    "./client": "./src/client/index.js",
+    "./shared": "./src/shared/index.js"
+  },
+  "files": [
+    "src/**/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atomantic/portos-ai-toolkit.git"
+  },
+  "homepage": "https://github.com/atomantic/portos-ai-toolkit#readme",
+  "bugs": {
+    "url": "https://github.com/atomantic/portos-ai-toolkit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm test"
+  },
+  "dependencies": {
+    "zod": "^3.24.1",
+    "uuid": "^11.0.3"
+  },
+  "peerDependencies": {
+    "express": "^4.21.2 || ^5.2.1",
+    "socket.io": "^4.8.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    },
+    "socket.io": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.16",
+    "supertest": "^7.1.4",
+    "vitest": "^4.0.16"
+  },
+  "keywords": [
+    "ai",
+    "providers",
+    "llm",
+    "claude",
+    "openai",
+    "ollama",
+    "lm-studio",
+    "prompts",
+    "templates",
+    "portos"
+  ]
+}
