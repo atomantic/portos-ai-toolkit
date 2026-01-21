@@ -16,6 +16,10 @@ npm install portos-ai-toolkit
 - **React Components**: Ready-to-use React components and hooks for AI provider management
 - **Express Routes**: Pre-built Express route handlers for provider, prompt, and run management
 
+## Screenshot
+
+![AI Providers UI](screenshot.png)
+
 ## Usage
 
 ### Server-side
