@@ -1,6 +1,6 @@
 # Integration Guide
 
-This document explains how to integrate `@portos/ai-toolkit` into an existing PortOS-style application.
+This document explains how to integrate `portos-ai-toolkit` into an existing PortOS-style application.
 
 ## Full Integration (Future Work)
 
@@ -11,7 +11,7 @@ To fully integrate the toolkit into PortOS, the following steps would be needed:
 Replace local services with toolkit services in `server/index.js`:
 
 ```javascript
-import { createAIToolkit } from '@portos/ai-toolkit/server';
+import { createAIToolkit } from 'portos-ai-toolkit/server';
 import { asyncHandler } from './lib/errorHandler.js';
 
 // Create toolkit with PortOS configuration
@@ -99,7 +99,7 @@ The toolkit works standalone in new projects without PortOS dependencies:
 
 ```javascript
 import express from 'express';
-import { createAIToolkit } from '@portos/ai-toolkit/server';
+import { createAIToolkit } from 'portos-ai-toolkit/server';
 
 const app = express();
 app.use(express.json());
@@ -113,7 +113,7 @@ app.listen(3000);
 ### Minimal Client Setup
 
 ```javascript
-import { createApiClient, useProviders } from '@portos/ai-toolkit/client';
+import { createApiClient, useProviders } from 'portos-ai-toolkit/client';
 
 const api = createApiClient();
 

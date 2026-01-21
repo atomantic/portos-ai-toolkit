@@ -1,5 +1,5 @@
 /**
- * TypeScript declarations for @portos/ai-toolkit/server
+ * TypeScript declarations for portos-ai-toolkit/server
  */
 
 export interface ProviderService {
