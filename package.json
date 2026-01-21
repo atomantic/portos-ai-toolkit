@@ -1,6 +1,6 @@
 {
   "name": "portos-ai-toolkit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared AI provider, model, and prompt template patterns for PortOS-style applications",
   "author": "Adam Eivy <adam@eivy.com> (https://atomantic.com)",
   "license": "MIT",
@@ -39,6 +39,7 @@
   "peerDependencies": {
     "express": "^4.21.2 || ^5.2.1",
     "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -47,6 +48,9 @@
       "optional": true
     },
     "socket.io": {
+      "optional": true
+    },
+    "socket.io-client": {
       "optional": true
     },
     "react": {
