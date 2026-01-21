@@ -109,6 +109,12 @@ export function createProviderService(config = {}) {
         apiKey: providerData.apiKey || '',
         models: providerData.models || [],
         defaultModel: providerData.defaultModel || null,
+        // Model tiers for intelligent task routing
+        lightModel: providerData.lightModel || null,
+        mediumModel: providerData.mediumModel || null,
+        heavyModel: providerData.heavyModel || null,
+        // Fallback provider when this one hits usage limits
+        fallbackProvider: providerData.fallbackProvider || null,
         timeout: providerData.timeout || 300000,
         enabled: providerData.enabled !== false,
         envVars: providerData.envVars || {}
