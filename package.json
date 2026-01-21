@@ -1,5 +1,5 @@
 {
-  "name": "@portos/ai-toolkit",
+  "name": "portos-ai-toolkit",
   "version": "0.1.0",
   "description": "Shared AI provider, model, and prompt template patterns for PortOS-style applications",
   "author": "Adam Eivy <adam@eivy.com> (https://atomantic.com)",

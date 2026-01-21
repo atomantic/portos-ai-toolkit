@@ -1,11 +1,11 @@
-# @portos/ai-toolkit
+# portos-ai-toolkit
 
 Shared AI provider, model, and prompt template patterns for PortOS-style applications.
 
 ## Installation
 
 ```bash
-npm install @portos/ai-toolkit
+npm install portos-ai-toolkit
 ```
 
 ## Features
@@ -21,7 +21,7 @@ npm install @portos/ai-toolkit
 ### Server-side
 
 ```javascript
-import { createAIRoutes, ProvidersService, RunnerService } from '@portos/ai-toolkit/server';
+import { createAIRoutes, ProvidersService, RunnerService } from 'portos-ai-toolkit/server';
 import express from 'express';
 
 const app = express();
@@ -37,7 +37,7 @@ app.use('/api', createAIRoutes({ providersService, runnerService }));
 ### Client-side
 
 ```javascript
-import { AIProviders, useProviders, createApiClient } from '@portos/ai-toolkit/client';
+import { AIProviders, useProviders, createApiClient } from 'portos-ai-toolkit/client';
 
 // Use the full-featured AIProviders page component
 function ProvidersPage() {
@@ -54,7 +54,7 @@ function CustomComponent() {
 ### Shared utilities
 
 ```javascript
-import { PROVIDER_TYPES, DEFAULT_TIMEOUT } from '@portos/ai-toolkit/shared';
+import { PROVIDER_TYPES, DEFAULT_TIMEOUT } from 'portos-ai-toolkit/shared';
 ```
 
 ## Provider Types
@@ -74,7 +74,7 @@ Connect to OpenAI-compatible APIs:
 
 ## API Reference
 
-### Server Exports (`@portos/ai-toolkit/server`)
+### Server Exports (`portos-ai-toolkit/server`)
 
 - `createAIRoutes(options)` - Create Express router with all AI routes
 - `ProvidersService` - Manage AI provider configurations
@@ -82,7 +82,7 @@ Connect to OpenAI-compatible APIs:
 - `PromptsService` - Manage prompt templates
 - Route handlers: `createProvidersRoutes`, `createRunsRoutes`, `createPromptsRoutes`
 
-### Client Exports (`@portos/ai-toolkit/client`)
+### Client Exports (`portos-ai-toolkit/client`)
 
 - `AIProviders` - Full-featured provider management page component
 - `ProviderDropdown` - Dropdown for selecting providers
@@ -90,7 +90,7 @@ Connect to OpenAI-compatible APIs:
 - `useRuns()` - Hook for run history
 - `createApiClient(baseUrl)` - Create API client instance
 
-### Shared Exports (`@portos/ai-toolkit/shared`)
+### Shared Exports (`portos-ai-toolkit/shared`)
 
 - `PROVIDER_TYPES` - Provider type constants
 - `DEFAULT_TIMEOUT` - Default timeout value
