@@ -3,6 +3,7 @@ import { existsSync } from 'fs';
 import { join, extname } from 'path';
 import { spawn } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
+import { analyzeError, analyzeHttpError, ERROR_CATEGORIES } from './errorDetection.js';
 
 /**
  * Create a runner service with configurable storage and hooks
@@ -13,6 +14,7 @@ export function createRunnerService(config = {}) {
     runsDir = 'runs',
     screenshotsDir = './data/screenshots',
     providerService,
+    providerStatusService = null, // Optional: for rate limit/fallback handling
     hooks = {},
     maxConcurrentRuns = 5
   } = config;
@@ -60,12 +62,36 @@ export function createRunnerService(config = {}) {
    * Safe JSON parse with fallback
    */
   function safeJsonParse(str, fallback = {}) {
-    if (typeof str !== 'string') {
+    if (typeof str !== 'string' || !str.trim()) {
       return fallback;
     }
 
     const parsed = JSON.parse(str);
-    return parsed;
+    return parsed ?? fallback;
+  }
+
+  /**
+   * Handle provider error detection and status updates
+   */
+  async function handleProviderError(providerId, errorAnalysis, output) {
+    // Call hook for external handling (e.g., PortOS can update its provider status)
+    hooks.onProviderError?.(providerId, errorAnalysis, output);
+
+    // If we have a provider status service, update status directly
+    if (providerStatusService) {
+      if (errorAnalysis.category === ERROR_CATEGORIES.USAGE_LIMIT && errorAnalysis.requiresFallback) {
+        await providerStatusService.markUsageLimit(providerId, {
+          message: errorAnalysis.message,
+          waitTime: errorAnalysis.waitTime
+        }).catch(err => {
+          console.error(`❌ Failed to mark provider usage limit: ${err.message}`);
+        });
+      } else if (errorAnalysis.category === ERROR_CATEGORIES.RATE_LIMIT) {
+        await providerStatusService.markRateLimited(providerId).catch(err => {
+          console.error(`❌ Failed to mark provider rate limited: ${err.message}`);
+        });
+      }
+    }
   }
 
   return {
@@ -80,14 +106,46 @@ export function createRunnerService(config = {}) {
         workspacePath = process.cwd(),
         workspaceName = 'default',
         timeout,
-        source = 'devtools'
+        source = 'devtools',
+        fallbackProviderId = null // Optional: override for fallback
       } = options;
 
       if (!providerService) {
         throw new Error('Provider service not configured');
       }
 
-      const provider = await providerService.getProviderById(providerId);
+      // Check provider availability if status service is configured
+      let effectiveProviderId = providerId;
+      let usedFallback = false;
+
+      if (providerStatusService && !providerStatusService.isAvailable(providerId)) {
+        // Try to get a fallback provider
+        const allProviders = await providerService.getAllProviders();
+        const providersMap = {};
+        for (const p of allProviders.providers) {
+          providersMap[p.id] = p;
+        }
+
+        const fallback = providerStatusService.getFallbackProvider(
+          providerId,
+          providersMap,
+          fallbackProviderId
+        );
+
+        if (fallback) {
+          effectiveProviderId = fallback.provider.id;
+          usedFallback = true;
+          console.log(`⚡ Using fallback provider: ${fallback.provider.name} (source: ${fallback.source})`);
+        } else {
+          const timeUntilRecovery = providerStatusService.getTimeUntilRecovery(providerId);
+          throw new Error(
+            `Provider ${providerId} is unavailable (${providerStatusService.getStatus(providerId).reason}) ` +
+            `and no fallback is available. Recovery in: ${timeUntilRecovery || 'unknown'}`
+          );
+        }
+      }
+
+      const provider = await providerService.getProviderById(effectiveProviderId);
       if (!provider) {
         throw new Error('Provider not found');
       }
@@ -105,8 +163,10 @@ export function createRunnerService(config = {}) {
       const metadata = {
         id: runId,
         type: 'ai',
-        providerId,
+        providerId: effectiveProviderId,
         providerName: provider.name,
+        originalProviderId: usedFallback ? providerId : null, // Track if fallback was used
+        usedFallback,
         model: model || provider.defaultModel,
         workspacePath,
         workspaceName,
@@ -118,6 +178,8 @@ export function createRunnerService(config = {}) {
         exitCode: null,
         success: null,
         error: null,
+        errorCategory: null,
+        errorAnalysis: null,
         outputSize: 0
       };
 
@@ -189,8 +251,19 @@ export function createRunnerService(config = {}) {
         metadata.success = code === 0;
         metadata.outputSize = Buffer.byteLength(output);
 
+        // Analyze errors if the run failed
         if (!metadata.success) {
-          metadata.error = `Process exited with code ${code}`;
+          const errorAnalysis = analyzeError(output, code);
+          metadata.error = errorAnalysis.message || `Process exited with code ${code}`;
+          metadata.errorCategory = errorAnalysis.category;
+          metadata.errorAnalysis = errorAnalysis;
+
+          // Handle provider-level errors (rate limits, usage limits)
+          if (errorAnalysis.hasError &&
+              (errorAnalysis.category === ERROR_CATEGORIES.RATE_LIMIT ||
+               errorAnalysis.category === ERROR_CATEGORIES.USAGE_LIMIT)) {
+            await handleProviderError(provider.id, errorAnalysis, output);
+          }
         }
 
         await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
@@ -264,7 +337,7 @@ export function createRunnerService(config = {}) {
           messages: [{ role: 'user', content: messageContent }],
           stream: true
         })
-      }).catch(err => ({ ok: false, error: err.message }));
+      }).catch(err => ({ ok: false, error: err.message, status: 0 }));
 
       if (!response.ok) {
         activeRuns.delete(runId);
@@ -273,13 +346,32 @@ export function createRunnerService(config = {}) {
         metadata.duration = Date.now() - startTime;
         metadata.success = false;
 
-        const errorDetails = response.error || `API error: ${response.status}`;
-        metadata.error = errorDetails;
-        metadata.errorDetails = errorDetails;
+        // Try to get response body for better error analysis
+        let responseBody = response.error || '';
+        if (response.text) {
+          responseBody = await response.text().catch(() => response.error || '');
+        }
+
+        const errorAnalysis = analyzeHttpError({
+          status: response.status || 0,
+          statusText: response.statusText || '',
+          body: responseBody
+        });
+
+        metadata.error = errorAnalysis.message || `API error: ${response.status}`;
+        metadata.errorCategory = errorAnalysis.category;
+        metadata.errorAnalysis = errorAnalysis;
+
+        // Handle provider-level errors
+        if (errorAnalysis.hasError &&
+            (errorAnalysis.category === ERROR_CATEGORIES.RATE_LIMIT ||
+             errorAnalysis.category === ERROR_CATEGORIES.USAGE_LIMIT)) {
+          await handleProviderError(provider.id, errorAnalysis, responseBody);
+        }
 
         await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
 
-        hooks.onRunFailed?.(metadata, errorDetails, '');
+        hooks.onRunFailed?.(metadata, metadata.error, '');
         onComplete?.(metadata);
         return runId;
       }
@@ -298,10 +390,9 @@ export function createRunnerService(config = {}) {
 
           for (const line of lines) {
             const data = line.slice(6);
-            if (data === '✅') continue;
+            if (data === '✅' || data === '[DONE]') continue;
 
-            let parsed = null;
-            parsed = JSON.parse(data);
+            const parsed = JSON.parse(data);
             if (parsed?.choices?.[0]?.delta?.content) {
               const text = parsed.choices[0].delta.content;
               output += text;
@@ -336,12 +427,23 @@ export function createRunnerService(config = {}) {
         metadata.endTime = new Date().toISOString();
         metadata.duration = Date.now() - startTime;
         metadata.success = false;
-        metadata.error = err.message;
+
+        const errorAnalysis = analyzeError(err.message);
+        metadata.error = errorAnalysis.message || err.message;
+        metadata.errorCategory = errorAnalysis.category;
+        metadata.errorAnalysis = errorAnalysis;
         metadata.outputSize = Buffer.byteLength(output);
+
+        // Handle provider-level errors
+        if (errorAnalysis.hasError &&
+            (errorAnalysis.category === ERROR_CATEGORIES.RATE_LIMIT ||
+             errorAnalysis.category === ERROR_CATEGORIES.USAGE_LIMIT)) {
+          await handleProviderError(provider.id, errorAnalysis, output);
+        }
 
         await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
 
-        hooks.onRunFailed?.(metadata, err.message, output);
+        hooks.onRunFailed?.(metadata, metadata.error, output);
         onComplete?.(metadata);
       });
 

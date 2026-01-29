@@ -6,13 +6,16 @@
 import { createProviderService } from './providers.js';
 import { createRunnerService } from './runner.js';
 import { createPromptsService } from './prompts.js';
+import { createProviderStatusService } from './providerStatus.js';
 import { createProvidersRoutes } from './routes/providers.js';
 import { createRunsRoutes } from './routes/runs.js';
 import { createPromptsRoutes } from './routes/prompts.js';
+import { createProviderStatusRoutes } from './routes/providerStatus.js';
 
 export * from './validation.js';
-export { createProviderService, createRunnerService, createPromptsService };
-export { createProvidersRoutes, createRunsRoutes, createPromptsRoutes };
+export * from './errorDetection.js';
+export { createProviderService, createRunnerService, createPromptsService, createProviderStatusService };
+export { createProvidersRoutes, createRunsRoutes, createPromptsRoutes, createProviderStatusRoutes };
 
 /**
  * Create a complete AI toolkit instance with services and routes
@@ -21,6 +24,7 @@ export function createAIToolkit(config = {}) {
   const {
     dataDir = './data',
     providersFile = 'providers.json',
+    statusFile = 'provider-status.json',
     runsDir = 'runs',
     promptsDir = 'prompts',
     screenshotsDir = './data/screenshots',
@@ -36,7 +40,11 @@ export function createAIToolkit(config = {}) {
     hooks = {},
 
     // Runner config
-    maxConcurrentRuns = 5
+    maxConcurrentRuns = 5,
+
+    // Provider status config
+    enableProviderStatus = true,
+    defaultFallbackPriority = ['claude-code', 'codex', 'lmstudio', 'local-lm-studio', 'ollama', 'gemini-cli']
   } = config;
 
   // Create services
@@ -46,12 +54,39 @@ export function createAIToolkit(config = {}) {
     sampleFile: sampleProvidersFile
   });
 
+  // Create provider status service if enabled
+  let providerStatusService = null;
+  if (enableProviderStatus) {
+    providerStatusService = createProviderStatusService({
+      dataDir,
+      statusFile,
+      defaultFallbackPriority,
+      onStatusChange: (eventData) => {
+        // Emit Socket.IO event if io is configured
+        io?.emit('provider:status:changed', eventData);
+      }
+    });
+
+    // Initialize status service
+    providerStatusService.init().catch(err => {
+      console.error(`❌ Failed to initialize provider status: ${err.message}`);
+    });
+  }
+
   const runnerService = createRunnerService({
     dataDir,
     runsDir,
     screenshotsDir,
     providerService,
-    hooks,
+    providerStatusService,
+    hooks: {
+      ...hooks,
+      // Add hook to emit provider error events
+      onProviderError: (providerId, errorAnalysis, output) => {
+        io?.emit('provider:error', { providerId, errorAnalysis });
+        hooks.onProviderError?.(providerId, errorAnalysis, output);
+      }
+    },
     maxConcurrentRuns
   });
 
@@ -70,19 +105,27 @@ export function createAIToolkit(config = {}) {
   const runsRouter = createRunsRoutes(runnerService, { asyncHandler, io });
   const promptsRouter = createPromptsRoutes(promptsService, { asyncHandler });
 
+  // Create provider status routes if enabled
+  let providerStatusRouter = null;
+  if (providerStatusService) {
+    providerStatusRouter = createProviderStatusRoutes(providerStatusService, { asyncHandler });
+  }
+
   return {
     // Services
     services: {
       providers: providerService,
       runner: runnerService,
-      prompts: promptsService
+      prompts: promptsService,
+      providerStatus: providerStatusService
     },
 
     // Routes
     routes: {
       providers: providersRouter,
       runs: runsRouter,
-      prompts: promptsRouter
+      prompts: promptsRouter,
+      providerStatus: providerStatusRouter
     },
 
     // Convenience method to mount all routes
@@ -90,6 +133,9 @@ export function createAIToolkit(config = {}) {
       app.use(`${basePath}/providers`, providersRouter);
       app.use(`${basePath}/runs`, runsRouter);
       app.use(`${basePath}/prompts`, promptsRouter);
+      if (providerStatusRouter) {
+        app.use(`${basePath}/providers/status`, providerStatusRouter);
+      }
     }
   };
 }
