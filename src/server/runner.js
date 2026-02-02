@@ -380,6 +380,9 @@ export function createRunnerService(config = {}) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
+      // Track reasoning separately for reasoning models (like DeepSeek-R1, gpt-oss-20b)
+      let reasoning = '';
+
       const processStream = async () => {
         while (true) {
           const { done, value } = await reader.read();
@@ -393,12 +396,29 @@ export function createRunnerService(config = {}) {
             if (data === '✅' || data === '[DONE]') continue;
 
             const parsed = JSON.parse(data);
-            if (parsed?.choices?.[0]?.delta?.content) {
-              const text = parsed.choices[0].delta.content;
+            const delta = parsed?.choices?.[0]?.delta;
+
+            // Handle regular content
+            if (delta?.content) {
+              const text = delta.content;
               output += text;
-              onData?.(text);
+              onData?.({ text });
+            }
+
+            // Handle reasoning content from reasoning models (LM Studio, DeepSeek-R1, etc.)
+            // Reasoning is collected but not streamed to client by default
+            if (delta?.reasoning) {
+              reasoning += delta.reasoning;
             }
           }
+        }
+
+        // For reasoning models: if content is empty but we have reasoning, use reasoning as fallback
+        // This handles models like DeepSeek-R1, gpt-oss-20b that separate thinking from final answer
+        if (!output.trim() && reasoning.trim()) {
+          console.log(`🧠 Reasoning model detected - using reasoning as output (${reasoning.length} chars)`);
+          output = reasoning;
+          onData?.({ text: reasoning, isReasoning: true });
         }
 
         await writeFile(outputPath, output);
@@ -410,6 +430,8 @@ export function createRunnerService(config = {}) {
         metadata.exitCode = 0;
         metadata.success = true;
         metadata.outputSize = Buffer.byteLength(output);
+        metadata.hadReasoning = reasoning.length > 0;
+        metadata.usedReasoningAsFallback = !output.trim() && reasoning.trim();
         await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
 
         hooks.onRunCompleted?.(metadata, output);
