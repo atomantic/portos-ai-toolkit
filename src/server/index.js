@@ -11,6 +11,22 @@ import { createProvidersRoutes } from './routes/providers.js';
 import { createRunsRoutes } from './routes/runs.js';
 import { createPromptsRoutes } from './routes/prompts.js';
 import { createProviderStatusRoutes } from './routes/providerStatus.js';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Path to the default providers sample file included with the toolkit.
+ * Use this as the sampleProvidersFile config option to get preconfigured providers:
+ * - claude-code (CLI)
+ * - codex (CLI)
+ * - gemini-cli (CLI)
+ * - nvidia-kimi (API - NVIDIA's free Kimi K2.5 models)
+ * - lmstudio (API)
+ * - ollama (API)
+ */
+export const DEFAULT_PROVIDERS_SAMPLE = join(__dirname, 'defaults/providers.sample.json');
 
 export * from './validation.js';
 export * from './errorDetection.js';
@@ -44,7 +60,7 @@ export function createAIToolkit(config = {}) {
 
     // Provider status config
     enableProviderStatus = true,
-    defaultFallbackPriority = ['claude-code', 'codex', 'lmstudio', 'local-lm-studio', 'ollama', 'gemini-cli']
+    defaultFallbackPriority = ['claude-code', 'codex', 'nvidia-kimi', 'lmstudio', 'ollama', 'gemini-cli']
   } = config;
 
   // Create services
