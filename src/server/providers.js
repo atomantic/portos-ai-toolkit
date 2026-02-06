@@ -226,25 +226,33 @@ export function createProviderService(config = {}) {
     },
 
     /**
-     * Refresh models from API provider
+     * Refresh models from provider using provider-specific strategies
      */
     async refreshProviderModels(id) {
       const data = await loadProviders();
       const provider = data.providers[id];
 
-      if (!provider || provider.type !== 'api') {
+      if (!provider) {
         return null;
       }
 
-      const modelsUrl = `${provider.endpoint}/models`;
-      const response = await fetch(modelsUrl, {
-        headers: provider.apiKey ? { 'Authorization': `Bearer ${provider.apiKey}` } : {}
-      }).catch(() => null);
+      let models = [];
 
-      if (!response?.ok) return null;
+      try {
+        // Provider-specific refresh strategies
+        if (provider.type === 'api') {
+          models = await this._refreshAPIProviderModels(provider);
+        } else if (provider.type === 'cli') {
+          models = await this._refreshCLIProviderModels(provider);
+        }
+      } catch (error) {
+        console.error(`Failed to refresh models for ${provider.name}:`, error.message);
+        return null;
+      }
 
-      const responseData = await response.json().catch(() => ({ data: [] }));
-      const models = responseData.data?.map(m => m.id) || [];
+      if (!models || models.length === 0) {
+        return null;
+      }
 
       const updatedProvider = {
         ...data.providers[id],
@@ -254,6 +262,128 @@ export function createProviderService(config = {}) {
       data.providers[id] = updatedProvider;
       await saveProviders(data);
       return updatedProvider;
+    },
+
+    /**
+     * Refresh models from API providers
+     * Supports OpenAI-compatible endpoints (OpenAI, LM Studio, etc.)
+     * and Ollama-style endpoints
+     */
+    async _refreshAPIProviderModels(provider) {
+      // Try Ollama format first if endpoint suggests it
+      if (provider.endpoint?.includes('ollama') || provider.endpoint?.includes(':11434')) {
+        const ollamaUrl = `${provider.endpoint}/api/tags`;
+        const response = await fetch(ollamaUrl).catch(() => null);
+
+        if (response?.ok) {
+          const data = await response.json().catch(() => null);
+          if (data?.models) {
+            return data.models.map(m => m.name || m.model);
+          }
+        }
+      }
+
+      // Try OpenAI-compatible format (default)
+      const modelsUrl = `${provider.endpoint}/models`;
+      const headers = {};
+
+      if (provider.apiKey) {
+        headers['Authorization'] = `Bearer ${provider.apiKey}`;
+      }
+
+      const response = await fetch(modelsUrl, { headers }).catch(() => null);
+
+      if (!response?.ok) {
+        throw new Error(`HTTP ${response?.status || 'error'}`);
+      }
+
+      const responseData = await response.json().catch(() => ({ data: [] }));
+
+      // OpenAI format: { data: [{ id: "model-name" }] }
+      if (responseData.data && Array.isArray(responseData.data)) {
+        return responseData.data.map(m => m.id);
+      }
+
+      // Alternative format: { models: ["model-name"] }
+      if (responseData.models && Array.isArray(responseData.models)) {
+        return responseData.models;
+      }
+
+      return [];
+    },
+
+    /**
+     * Refresh models from CLI providers using provider-specific APIs
+     */
+    async _refreshCLIProviderModels(provider) {
+      const providerName = provider.name.toLowerCase();
+
+      // Claude/Anthropic - fetch from Anthropic API
+      if (providerName.includes('claude') || provider.command === 'claude') {
+        return await this._fetchAnthropicModels(provider);
+      }
+
+      // Gemini - fetch from Google AI API
+      if (providerName.includes('gemini') || provider.command === 'gemini') {
+        return await this._fetchGeminiModels(provider);
+      }
+
+      // For other CLI providers, we can't refresh models
+      throw new Error('Model refresh not supported for this CLI provider');
+    },
+
+    /**
+     * Fetch available Claude models from Anthropic API
+     */
+    async _fetchAnthropicModels(provider) {
+      // Check for API key in provider or environment
+      const apiKey = provider.apiKey || process.env.ANTHROPIC_API_KEY;
+
+      if (!apiKey) {
+        throw new Error('Anthropic API key required for model refresh');
+      }
+
+      // Known Claude models as of January 2025
+      // Anthropic doesn't have a public models list endpoint yet
+      return [
+        'claude-opus-4-6',
+        'claude-opus-4',
+        'claude-sonnet-4-6',
+        'claude-sonnet-4',
+        'claude-3-7-sonnet-20250219',
+        'claude-3-5-sonnet-20241022',
+        'claude-3-5-sonnet-20240620',
+        'claude-3-5-haiku-20241022',
+        'claude-3-opus-20240229',
+        'claude-3-sonnet-20240229',
+        'claude-3-haiku-20240307'
+      ];
+    },
+
+    /**
+     * Fetch available Gemini models from Google AI API
+     */
+    async _fetchGeminiModels(provider) {
+      const apiKey = provider.apiKey || process.env.GOOGLE_API_KEY;
+
+      if (!apiKey) {
+        throw new Error('Google API key required for model refresh');
+      }
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`
+      ).catch(() => null);
+
+      if (!response?.ok) {
+        throw new Error(`HTTP ${response?.status || 'error'}`);
+      }
+
+      const data = await response.json().catch(() => ({ models: [] }));
+
+      // Filter to only generative models
+      return (data.models || [])
+        .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+        .map(m => m.name.replace('models/', ''));
     }
   };
 }
