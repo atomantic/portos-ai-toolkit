@@ -188,6 +188,7 @@ export function createRunnerService(config = {}) {
       await writeFile(join(runDir, 'output.txt'), '');
 
       hooks.onRunCreated?.(metadata);
+      console.log(`🤖 AI run [${source}]: ${provider.name}/${metadata.model}`);
 
       const effectiveTimeout = timeout || provider.timeout;
 
