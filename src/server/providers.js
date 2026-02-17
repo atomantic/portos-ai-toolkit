@@ -1,8 +1,12 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DEFAULT_SAMPLE_PATH = join(__dirname, '../defaults/providers.sample.json');
 
 const execAsync = promisify(exec);
 
@@ -384,6 +388,33 @@ export function createProviderService(config = {}) {
       return (data.models || [])
         .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
         .map(m => m.name.replace('models/', ''));
+    },
+
+    /**
+     * Get sample providers not yet in user's configuration.
+     * Reads toolkit's built-in defaults and overlays with host app's sample file.
+     */
+    async getSampleProviders() {
+      const data = await loadProviders();
+      const existingIds = new Set(Object.keys(data.providers));
+
+      // Read toolkit's built-in sample
+      let sampleProviders = {};
+      if (existsSync(DEFAULT_SAMPLE_PATH)) {
+        const content = await readFile(DEFAULT_SAMPLE_PATH, 'utf-8');
+        const parsed = JSON.parse(content);
+        sampleProviders = { ...parsed.providers };
+      }
+
+      // Overlay with host app's sample (takes precedence)
+      if (sampleFile && existsSync(sampleFile)) {
+        const content = await readFile(sampleFile, 'utf-8');
+        const parsed = JSON.parse(content);
+        sampleProviders = { ...sampleProviders, ...parsed.providers };
+      }
+
+      // Filter out providers already in user's config
+      return Object.values(sampleProviders).filter(p => !existingIds.has(p.id));
     }
   };
 }

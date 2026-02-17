@@ -12,6 +12,7 @@ export interface ProviderService {
   deleteProvider(id: string): Promise<boolean>;
   testProvider(id: string): Promise<{ success: boolean; [key: string]: any }>;
   refreshProviderModels(id: string): Promise<any | null>;
+  getSampleProviders(): Promise<any[]>;
 }
 
 export interface RunnerService {

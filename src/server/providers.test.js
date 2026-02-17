@@ -117,4 +117,75 @@ describe('Provider Service', () => {
       })
     ).rejects.toThrow('Provider with this ID already exists');
   });
+
+  describe('getSampleProviders', () => {
+    it('should return sample providers from default sample file', async () => {
+      // No providers created yet — all samples should be returned
+      const samples = await providerService.getSampleProviders();
+      expect(Array.isArray(samples)).toBe(true);
+      expect(samples.length).toBeGreaterThan(0);
+      // Should include claude-code-bedrock from the default sample
+      const bedrock = samples.find(p => p.id === 'claude-code-bedrock');
+      expect(bedrock).toBeDefined();
+      expect(bedrock.name).toBe('Claude Code CLI: Bedrock');
+    });
+
+    it('should exclude providers already in user config', async () => {
+      // Create a provider with an ID that matches a sample
+      await providerService.createProvider({
+        id: 'claude-code',
+        name: 'Claude Code CLI',
+        type: 'cli',
+        command: 'claude'
+      });
+
+      const samples = await providerService.getSampleProviders();
+      const claudeCode = samples.find(p => p.id === 'claude-code');
+      expect(claudeCode).toBeUndefined();
+    });
+
+    it('should overlay host app sample over toolkit defaults', async () => {
+      // Pre-create providers.json with one existing provider so loadProviders
+      // doesn't bootstrap from sampleFile
+      const providersPath = join(TEST_DATA_DIR, 'providers-overlay.json');
+      await writeFile(providersPath, JSON.stringify({
+        activeProvider: 'existing',
+        providers: {
+          existing: { id: 'existing', name: 'Existing', type: 'cli', command: 'test' }
+        }
+      }));
+
+      // Create a host app sample with a unique provider
+      const samplePath = join(TEST_DATA_DIR, 'custom-sample.json');
+      await writeFile(samplePath, JSON.stringify({
+        activeProvider: 'custom-cli',
+        providers: {
+          'custom-cli': {
+            id: 'custom-cli',
+            name: 'Custom CLI',
+            type: 'cli',
+            command: 'custom',
+            args: [],
+            models: [],
+            timeout: 300000,
+            enabled: true
+          }
+        }
+      }));
+
+      const serviceWithSample = createProviderService({
+        dataDir: TEST_DATA_DIR,
+        providersFile: 'providers-overlay.json',
+        sampleFile: samplePath
+      });
+
+      const samples = await serviceWithSample.getSampleProviders();
+      const custom = samples.find(p => p.id === 'custom-cli');
+      expect(custom).toBeDefined();
+      expect(custom.name).toBe('Custom CLI');
+      // 'existing' should NOT appear (already in user's config)
+      const existing = samples.find(p => p.id === 'existing');
+      expect(existing).toBeUndefined();
+    });
+  });
 });

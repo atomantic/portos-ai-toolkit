@@ -35,6 +35,12 @@ export function createProvidersRoutes(providerService, options = {}) {
     res.json(provider);
   }));
 
+  // GET /providers/samples - Get sample providers not yet in user's config
+  router.get('/samples', asyncHandler(async (req, res) => {
+    const providers = await providerService.getSampleProviders();
+    res.json({ providers });
+  }));
+
   // GET /providers/:id - Get provider by ID
   router.get('/:id', asyncHandler(async (req, res) => {
     const provider = await providerService.getProviderById(req.params.id);
