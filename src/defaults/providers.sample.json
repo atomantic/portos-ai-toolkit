@@ -14,7 +14,8 @@
       "heavyModel": "claude-opus-4-20250514",
       "timeout": 300000,
       "enabled": true,
-      "envVars": {}
+      "envVars": {},
+      "secretEnvVars": []
     },
     "claude-code-bedrock": {
       "id": "claude-code-bedrock",
@@ -32,7 +33,8 @@
       "envVars": {
         "CLAUDE_CODE_USE_BEDROCK": "1",
         "AWS_BEARER_TOKEN_BEDROCK": ""
-      }
+      },
+      "secretEnvVars": ["AWS_BEARER_TOKEN_BEDROCK"]
     },
     "codex": {
       "id": "codex",
@@ -47,7 +49,8 @@
       "heavyModel": "gpt-5.1-codex-max",
       "timeout": 300000,
       "enabled": true,
-      "envVars": {}
+      "envVars": {},
+      "secretEnvVars": []
     },
     "gemini-cli": {
       "id": "gemini-cli",
@@ -59,7 +62,8 @@
       "defaultModel": null,
       "timeout": 300000,
       "enabled": true,
-      "envVars": {}
+      "envVars": {},
+      "secretEnvVars": []
     },
     "nvidia-kimi": {
       "id": "nvidia-kimi",
@@ -75,7 +79,8 @@
       "fallbackProvider": null,
       "timeout": 300000,
       "enabled": false,
-      "envVars": {}
+      "envVars": {},
+      "secretEnvVars": []
     },
     "lmstudio": {
       "id": "lmstudio",
@@ -87,7 +92,8 @@
       "defaultModel": null,
       "timeout": 300000,
       "enabled": false,
-      "envVars": {}
+      "envVars": {},
+      "secretEnvVars": []
     },
     "ollama": {
       "id": "ollama",
@@ -99,7 +105,8 @@
       "defaultModel": null,
       "timeout": 300000,
       "enabled": false,
-      "envVars": {}
+      "envVars": {},
+      "secretEnvVars": []
     }
   }
 }

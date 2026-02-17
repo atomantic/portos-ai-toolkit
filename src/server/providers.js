@@ -121,7 +121,8 @@ export function createProviderService(config = {}) {
         fallbackProvider: providerData.fallbackProvider || null,
         timeout: providerData.timeout || 300000,
         enabled: providerData.enabled !== false,
-        envVars: providerData.envVars || {}
+        envVars: providerData.envVars || {},
+        secretEnvVars: providerData.secretEnvVars || []
       };
 
       data.providers[id] = provider;
