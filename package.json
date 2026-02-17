@@ -1,6 +1,6 @@
 {
   "name": "portos-ai-toolkit",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Shared AI provider, model, and prompt template patterns for PortOS-style applications",
   "author": "Adam Eivy <adam@eivy.com> (https://atomantic.com)",
   "license": "MIT",
