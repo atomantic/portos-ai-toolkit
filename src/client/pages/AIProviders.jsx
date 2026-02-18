@@ -541,7 +541,7 @@ function ProviderForm({ provider, onClose, onSave, api, colorPrefix = 'app' }) {
                 type="text"
                 value={formData.defaultModel}
                 onChange={(e) => setFormData(prev => ({ ...prev, defaultModel: e.target.value }))}
-                placeholder="claude-sonnet-4-20250514"
+                placeholder="claude-sonnet-4-6"
                 className={`w-full px-3 py-2 bg-${colorPrefix}-bg border border-${colorPrefix}-border rounded-lg text-white focus:border-${colorPrefix}-accent focus:outline-none`}
               />
             )}
