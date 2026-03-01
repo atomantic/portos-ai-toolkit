@@ -33,15 +33,15 @@
     "prepublishOnly": "npm test"
   },
   "dependencies": {
-    "zod": "^3.24.1",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "zod": "^4.3.6"
   },
   "peerDependencies": {
     "express": "^4.21.2 || ^5.2.1",
-    "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   },
   "peerDependenciesMeta": {
     "express": {
@@ -63,7 +63,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.16",
     "supertest": "^7.1.4",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.18"
   },
   "keywords": [
     "ai",
