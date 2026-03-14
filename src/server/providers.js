@@ -342,24 +342,18 @@ export function createProviderService(config = {}) {
      * Fetch available Claude models from Anthropic API
      */
     async _fetchAnthropicModels(provider) {
-      // Check for API key in provider or environment
-      const apiKey = provider.apiKey || process.env.ANTHROPIC_API_KEY;
-
-      if (!apiKey) {
-        throw new Error('Anthropic API key required for model refresh');
-      }
-
-      // Known Claude models as of January 2025
-      // Anthropic doesn't have a public models list endpoint yet
+      // Known Claude models — Anthropic doesn't have a public models list endpoint
+      // so we maintain a curated list of current and recent models
       return [
         'claude-opus-4-6',
-        'claude-opus-4',
         'claude-sonnet-4-6',
-        'claude-sonnet-4',
-        'claude-3-7-sonnet-20250219',
+        'claude-opus-4-5-20251101',
+        'claude-sonnet-4-5-20250929',
+        'claude-sonnet-4-20250514',
+        'claude-haiku-4-5-20251001',
+        'claude-3-5-haiku-latest',
         'claude-3-5-sonnet-20241022',
         'claude-3-5-sonnet-20240620',
-        'claude-3-5-haiku-20241022',
         'claude-3-opus-20240229',
         'claude-3-sonnet-20240229',
         'claude-3-haiku-20240307'
