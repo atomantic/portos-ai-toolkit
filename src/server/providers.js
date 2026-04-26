@@ -345,7 +345,7 @@ export function createProviderService(config = {}) {
       // Known Claude models — Anthropic doesn't have a public models list endpoint
       // so we maintain a curated list of current and recent models
       return [
-        'claude-opus-4-6',
+        'claude-opus-4-7',
         'claude-sonnet-4-6',
         'claude-opus-4-5-20251101',
         'claude-sonnet-4-5-20250929',
