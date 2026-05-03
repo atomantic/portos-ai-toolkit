@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.4] - 2026-05-03
+
+### Improvements
+
+- Refresh `gemini-cli` sample provider with the current Google model lineup: `gemini-3.1-pro`, `gemini-3-flash`, `gemini-2.5-pro`, `gemini-2.5-flash` (replaces the now-deprecated `gemini-2.5-flash-lite`). Tier mapping: `defaultModel`/`lightModel` → `gemini-2.5-flash`, `mediumModel` → `gemini-3-flash`, `heavyModel` → `gemini-3.1-pro`.
+
 ## [0.8.3] - 2026-04-25
 
 ### Improvements
