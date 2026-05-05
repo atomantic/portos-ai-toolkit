@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.5] - 2026-05-05
+
+### Fixed
+
+- Leave the Codex CLI sample provider's model list and tier defaults empty so host apps do not force a ChatGPT-account-incompatible model; Codex should use its own local CLI config unless a user explicitly enters reference metadata.
+- Categorize "model is not supported" provider output as `model-not-supported` instead of falling through to generic errors, while focusing CLI error analysis on the failure tail to avoid matching unrelated prompt text.
+
 ## [0.8.4] - 2026-05-03
 
 ### Improvements

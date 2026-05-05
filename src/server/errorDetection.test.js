@@ -48,6 +48,19 @@ describe('Error Detection', () => {
       expect(result.requiresFallback).toBe(true);
     });
 
+    it('should detect unsupported model errors without matching prompt text', () => {
+      const output = [
+        'Project instructions mention authentication as deployment context.',
+        ...Array.from({ length: 220 }, (_, i) => `prompt line ${i}`),
+        'ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The \'gpt-5\' model is not supported when using Codex with a ChatGPT account."}}'
+      ].join('\n');
+      const result = analyzeError(output, 1);
+      expect(result.hasError).toBe(true);
+      expect(result.category).toBe(ERROR_CATEGORIES.MODEL_NOT_SUPPORTED);
+      expect(result.requiresFallback).toBe(true);
+      expect(result.suggestedFix).toContain('CLI');
+    });
+
     it('should detect network errors', () => {
       const result = analyzeError('Error: ECONNREFUSED 127.0.0.1:8080');
       expect(result.hasError).toBe(true);

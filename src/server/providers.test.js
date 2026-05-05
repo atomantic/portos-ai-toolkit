@@ -130,6 +130,17 @@ describe('Provider Service', () => {
       expect(bedrock.name).toBe('Claude Code CLI: Bedrock');
     });
 
+    it('should leave Codex sample model selection to the local CLI config', async () => {
+      const samples = await providerService.getSampleProviders();
+      const codex = samples.find(p => p.id === 'codex');
+      expect(codex).toBeDefined();
+      expect(codex.models).toEqual([]);
+      expect(codex.defaultModel).toBeNull();
+      expect(codex.lightModel).toBeNull();
+      expect(codex.mediumModel).toBeNull();
+      expect(codex.heavyModel).toBeNull();
+    });
+
     it('should exclude providers already in user config', async () => {
       // Create a provider with an ID that matches a sample
       await providerService.createProvider({

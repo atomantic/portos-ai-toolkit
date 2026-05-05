@@ -13,6 +13,7 @@ export const ERROR_CATEGORIES = {
   USAGE_LIMIT: 'usage-limit',
   AUTH_ERROR: 'auth-error',
   MODEL_NOT_FOUND: 'model-not-found',
+  MODEL_NOT_SUPPORTED: 'model-not-supported',
   NETWORK_ERROR: 'network-error',
   TIMEOUT: 'timeout',
   QUOTA_EXCEEDED: 'quota-exceeded',
@@ -61,6 +62,15 @@ const ERROR_PATTERNS = [
     suggestedFix: 'Check API key configuration for this provider'
   },
 
+  // Model unsupported by the current account/provider plan
+  {
+    pattern: /(?:model:\s*)?["']?([A-Za-z0-9._:-]+)["']?\s+model is not supported|model\s+["']?([A-Za-z0-9._:-]+)["']?.*not supported/i,
+    category: ERROR_CATEGORIES.MODEL_NOT_SUPPORTED,
+    requiresFallback: true,
+    actionable: true,
+    suggestedFix: 'Update provider model configuration or leave CLI model selection blank so the CLI can use its configured default'
+  },
+
   // Model not found
   {
     pattern: /model.*(not found|does not exist|unavailable)|invalid model/i,
@@ -88,6 +98,14 @@ const ERROR_PATTERNS = [
     suggestedFix: 'Consider increasing timeout or reducing prompt complexity'
   }
 ];
+
+function getFailureAnalysisWindow(text) {
+  return text
+    .split('\n')
+    .filter(line => line.trim())
+    .slice(-200)
+    .join('\n');
+}
 
 /**
  * Wait time extraction patterns
@@ -155,15 +173,16 @@ export function analyzeError(errorText, exitCode = null) {
   }
 
   const text = String(errorText || '');
+  const analysisText = getFailureAnalysisWindow(text);
 
   // Check each pattern
   for (const errorPattern of ERROR_PATTERNS) {
-    if (errorPattern.pattern.test(text)) {
+    if (errorPattern.pattern.test(analysisText)) {
       const result = {
         hasError: true,
         category: errorPattern.category,
-        message: extractErrorMessage(text),
-        waitTime: errorPattern.extractWaitTime ? extractWaitTime(text) : null,
+        message: extractErrorMessage(analysisText),
+        waitTime: errorPattern.extractWaitTime ? extractWaitTime(analysisText) : null,
         requiresFallback: errorPattern.requiresFallback,
         actionable: errorPattern.actionable,
         suggestedFix: errorPattern.suggestedFix
@@ -178,7 +197,7 @@ export function analyzeError(errorText, exitCode = null) {
     return {
       hasError: true,
       category: ERROR_CATEGORIES.UNKNOWN,
-      message: extractErrorMessage(text) || `Process exited with code ${exitCode}`,
+      message: extractErrorMessage(analysisText) || `Process exited with code ${exitCode}`,
       waitTime: null,
       requiresFallback: false,
       actionable: false,

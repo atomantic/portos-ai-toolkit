@@ -274,7 +274,7 @@ export default function AIProviders({ onError = console.error, colorPrefix = 'ap
                   )}
                   {provider.type === 'cli' && (provider.command === 'codex' || provider.command === 'gemini') && (
                     <p className="text-xs text-yellow-400/80 mt-1">
-                      ⚠️ Reference only — the {provider.command} CLI runs with its own configured default model in headless execution. Selections here are not passed to the CLI.
+                      ⚠️ The {provider.command} CLI runs with its own configured default model in headless execution. Any model metadata here is reference-only and is not passed to the CLI.
                     </p>
                   )}
                 </div>
@@ -486,7 +486,7 @@ function ProviderForm({ provider, onClose, onSave, api, colorPrefix = 'app' }) {
               </div>
               {(formData.command === 'codex' || formData.command === 'gemini') && (
                 <div className="text-xs text-yellow-400/80 bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-2">
-                  ⚠️ The {formData.command} CLI runs with its own configured default model in headless execution. Models, default, and tiers below are stored as metadata for the advisor UI but are not passed to the CLI.
+                  ⚠️ The {formData.command} CLI runs with its own configured default model in headless execution. Leave model fields empty unless you only need reference metadata; values here are not passed to the CLI.
                 </div>
               )}
             </>
