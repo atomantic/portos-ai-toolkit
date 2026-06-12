@@ -76,5 +76,8 @@
     "prompts",
     "templates",
     "portos"
-  ]
+  ],
+  "engines": {
+    "node": ">=20"
+  }
 }
