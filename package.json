@@ -33,7 +33,6 @@
     "prepublishOnly": "npm test"
   },
   "dependencies": {
-    "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },
   "peerDependencies": {

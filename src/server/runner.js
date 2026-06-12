@@ -2,7 +2,7 @@ import { mkdir, writeFile, readFile, readdir, rm } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, extname } from 'path';
 import { spawn } from 'child_process';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { analyzeError, analyzeHttpError, ERROR_CATEGORIES } from './errorDetection.js';
 
 /**
@@ -156,7 +156,7 @@ export function createRunnerService(config = {}) {
 
       await ensureRunsDir();
 
-      const runId = uuidv4();
+      const runId = randomUUID();
       const runDir = join(RUNS_PATH, runId);
       await mkdir(runDir);
 
